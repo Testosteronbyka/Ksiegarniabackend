@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["Title"] = "Logowanie";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Zaloguj się</h2>
+
+<form asp-action="Login" method="post">
+    <div class="mb-3">
+        <label for="username" class="form-label">Nazwa użytkownika</label>
+        <input type="text" id="username" name="username" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Hasło</label>
+        <input type="password" id="password" name="password" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Zaloguj</button>
+</form>
+
+@if (ViewBag.Error != null)
+{
+    <p class="text-danger">@ViewBag.Error</p>
+}
