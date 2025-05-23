@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace UserService.Models
+namespace UsereService.Models
 {
     public class UsereDbContext : DbContext
     {
@@ -8,36 +8,33 @@ namespace UserService.Models
         {
         }
 
-        public DbSet<Usere> User { get; set; }
+        public DbSet<User> User { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             
-            // Konfiguracja modelu
-            modelBuilder.Entity<Usere>()
-                .HasKey(u => u.Id);
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.Username).IsUnique();
                 
-            modelBuilder.Entity<Usere>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-                
-            modelBuilder.Entity<Usere>()
-                .HasIndex(u => u.Username)
-                .IsUnique();
-
-            // Przykładowe dane
-            modelBuilder.Entity<Usere>().HasData(
-                new Usere { 
-                    Id = 1, 
-                    Username = "jan_kowalski", 
-                    Email = "jan.kowalski@example.com", 
-                    Password = "Dupa", 
-                    FullName = "Jan Kowalski", 
-                    Address = "ul. Przykładowa 1, 00-001 Warszawa", 
-                    Phone = "123456789" 
-                }
-            );
+                entity.Property(e => e.Username)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                    
+                entity.Property(e => e.Email)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                    
+                entity.Property(e => e.Password)
+                    .IsRequired()
+                    .HasMaxLength(255);
+                    
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("GETUTCDATE()");
+            });
         }
     }
 }

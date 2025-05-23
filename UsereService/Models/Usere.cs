@@ -1,13 +1,31 @@
-﻿namespace UserService.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace UsereService.Models
 {
-    public class Usere
+    [Table("Useres")]
+    public class User
     {
+        [Key]
         public int Id { get; set; }
-        public string Username { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; } 
-        public string FullName { get; set; }
-        public string Address { get; set; }
-        public string Phone { get; set; }
+        
+        [Required]
+        [StringLength(50)]
+        public string Username { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(100)]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+        
+        [Required]
+        [StringLength(255)]
+        public string Password { get; set; } = string.Empty;
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime? LastLoginAt { get; set; }
+        
+        public bool IsActive { get; set; } = true;
     }
 }

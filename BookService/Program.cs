@@ -1,44 +1,68 @@
-using BookService.Models;
 using Microsoft.EntityFrameworkCore;
+using BookService.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodaj usługi do kontenera
+// Dodanie kontrolerów
 builder.Services.AddControllers();
+
+// Konfiguracja Entity Framework z MySQL
+builder.Services.AddDbContext<BookDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 21)),
+        mySqlOptions => mySqlOptions
+            .EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null)
+    ));
+
+// Dodanie Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Konfiguracja DbContext z MySQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var serverVersion = new MySqlServerVersion(new Version(8, 0, 28));
-
-builder.Services.AddDbContext<BookDbContext>(
-    options => options
-        .UseMySql(connectionString, serverVersion)
-        .LogTo(Console.WriteLine, LogLevel.Information)
-        .EnableSensitiveDataLogging()
-        .EnableDetailedErrors()
-);
-builder.Services.AddCors(options => {
-    options.AddPolicy("AllowFrontend", policy => {
-        policy.WithOrigins("http://localhost:5000")
-            .AllowAnyHeader()
+// Konfiguracja CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.WithOrigins("http://localhost:5000", "https://localhost:5001")
             .AllowAnyMethod()
+            .AllowAnyHeader()
             .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Konfiguracja pipeline HTTP
+// Konfiguracja middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
 }
-app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
+
+// Automatyczne zastosowanie migracji
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<BookDbContext>();
+    try
+    {
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Błąd podczas migracji bazy danych BookService");
+    }
+}
 
 app.Run();

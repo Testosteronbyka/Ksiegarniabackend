@@ -1,11 +1,8 @@
-using System;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Ksiegarniabackend.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodanie niezbędnych usług
+// Dodanie kontrolerów z widokami
 builder.Services.AddControllersWithViews();
 
 // Konfiguracja sesji
@@ -22,22 +19,24 @@ builder.Services.AddHttpClient("BookService", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5002/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddHttpClient("OrderService", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5004/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddHttpClient("UserService", client =>
 {
-    // Poprawny adres do UsereService - dopasuj port do swojej konfiguracji
     client.BaseAddress = new Uri("http://localhost:5018/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// Dodanie HttpContextAccessor dla dostępu do sesji
+// Dodanie HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
@@ -65,5 +64,11 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Test połączenia z bazą danych przy starcie
+_ = Task.Run(async () =>
+{
+    await TestConnection.TestDatabaseConnection();
+});
 
 app.Run();
