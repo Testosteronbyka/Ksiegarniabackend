@@ -1,21 +1,29 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+﻿using System;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Ksiegarniabackend.Controllers
 {
     public class AccountController : Controller
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IHttpClientFactory httpClientFactory)
+        public AccountController(
+            IHttpClientFactory httpClientFactory,
+            ILogger<AccountController> logger)
         {
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
         // GET: /Account/Login
+        [HttpGet]
         public IActionResult Login()
         {
             return View();
@@ -23,49 +31,81 @@ namespace Ksiegarniabackend.Controllers
 
         // POST: /Account/Login
         [HttpPost]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
-            var client = _httpClientFactory.CreateClient("UserService");
-
-            // Pobierz listę użytkowników z mikroserwisu
-            var response = await client.GetAsync("/");
-            if (!response.IsSuccessStatusCode)
+            if (ModelState.IsValid)
             {
-                ViewBag.Error = $"Błąd serwera podczas próby logowania: {response.StatusCode}";
-                return View();
+                try
+                {
+                    // Użyj klienta HTTP dla UsereService
+                    var client = _httpClientFactory.CreateClient("UserService");
+                    
+                    // Przygotowanie danych do wysłania
+                    var loginData = new 
+                    {
+                        Email = model.Email,
+                        Password = model.Password,
+                        RememberMe = model.RememberMe
+                    };
+                    
+                    // Serializacja danych do formatu JSON
+                    var content = new StringContent(
+                        JsonSerializer.Serialize(loginData),
+                        Encoding.UTF8,
+                        "application/json");
+
+                    // Wywołanie endpointu logowania w UsereService
+                    var response = await client.PostAsync("api/auth/login", content);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var userData = await response.Content.ReadAsStringAsync();
+                        var user = JsonSerializer.Deserialize<UserDto>(userData, 
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        
+                        // Zapisanie danych użytkownika w sesji
+                        HttpContext.Session.SetString("UserId", user.Id.ToString());
+                        HttpContext.Session.SetString("UserName", user.Username);
+                        HttpContext.Session.SetString("IsAuthenticated", "true");
+                        
+                        return Json(new { success = true });
+                    }
+                    
+                    _logger.LogWarning($"Nieudane logowanie dla użytkownika {model.Email}");
+                    return Json(new { success = false, error = "Niepoprawne dane logowania" });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Błąd podczas logowania");
+                    return Json(new { success = false, error = ex.Message });
+                }
             }
-
-            var usersJson = await response.Content.ReadAsStringAsync();
-            var users = JsonConvert.DeserializeObject<List<UserDto>>(usersJson);
-
-            // Znajdź użytkownika z odpowiednimi danymi logowania
-            var user = users.FirstOrDefault(u => u.Username == username && u.Password == password);
-            if (user == null)
-            {
-                ViewBag.Error = "Niepoprawne dane logowania.";
-                return View();
-            }
-
-            // Ustawienie sesji dla zalogowanego użytkownika
-            HttpContext.Session.SetString("User", user.Username);
-
-            // Przekierowanie na stronę główną po udanym logowaniu
-            return RedirectToAction("Index", "Home");
+            
+            return Json(new { success = false, error = "Niepoprawne dane formularza" });
         }
 
-        // Wylogowanie użytkownika
+        // POST: /Account/Logout
+        [HttpPost]
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Login");
+            return RedirectToAction("Index", "Home");
         }
     }
 
-    // Tymczasowa klasa DTO do mapowania zwrotu z mikroserwisu
+    // Model widoku logowania
+    public class LoginViewModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public bool RememberMe { get; set; }
+    }
+
+    // DTO dla odpowiedzi z API
     public class UserDto
     {
         public int Id { get; set; }
         public string Username { get; set; }
-        public string Password { get; set; }
+        public string Email { get; set; }
     }
 }

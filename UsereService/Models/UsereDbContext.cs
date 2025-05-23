@@ -32,7 +32,7 @@ namespace UserService.Models
                     Id = 1, 
                     Username = "jan_kowalski", 
                     Email = "jan.kowalski@example.com", 
-                    Password = "Test123!", 
+                    Password = "Dupa", 
                     FullName = "Jan Kowalski", 
                     Address = "ul. Przykładowa 1, 00-001 Warszawa", 
                     Phone = "123456789" 

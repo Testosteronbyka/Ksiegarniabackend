@@ -1,7 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Models;
 
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options => {
+    options.ListenAnyIP(5004);
+});
 
 // Dodaj usługi do kontenera
 builder.Services.AddControllers();
@@ -21,6 +26,7 @@ builder.Services.AddDbContext<OrderDbContext>(
 );
 
 var app = builder.Build();
+
 
 // Konfiguracja pipeline HTTP
 if (app.Environment.IsDevelopment())

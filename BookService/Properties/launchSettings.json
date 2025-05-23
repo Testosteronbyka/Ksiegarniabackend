@@ -9,12 +9,9 @@
     }
   },
   "profiles": {
-    "http": {
+    "BookService": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5232",
+      "applicationUrl": "http://0.0.0.0:5002;https://0.0.0.0:5003",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
