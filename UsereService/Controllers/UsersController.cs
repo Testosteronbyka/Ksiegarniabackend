@@ -1,30 +1,30 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using UserService.Models;
+using UsereService.Models;
 
 namespace UsereService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UseresController : ControllerBase
+    public class UsersController : ControllerBase
     {
         private readonly UsereDbContext _context;
 
-        public UseresController(UsereDbContext context)
+        public UsersController(UsereDbContext context)
         {
             _context = context;
         }
 
         // GET: api/Users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Usere>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             return await _context.User.ToListAsync();
         }
 
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Usere>> GetUser(int id)
+        public async Task<ActionResult<User>> GetUser(int id)
         {
             var user = await _context.User.FindAsync(id);
 
@@ -41,28 +41,27 @@ namespace UsereService.Controllers
 
         // POST: api/Users
         [HttpPost]
-        public async Task<ActionResult<Usere>> CreateUser(Usere usere)
+        public async Task<ActionResult<User>> CreateUser(User user)
         {
-            // W rzeczywistej aplikacji trzeba zahashować hasło!
-            _context.User.Add(usere);
+            _context.User.Add(user);
             await _context.SaveChangesAsync();
 
-            // Nie zwracaj hasła w odpowiedzi API
-            usere.Password = null;
+            // Ukrywanie hasła w odpowiedzi API
+            user.Password = null;
 
-            return CreatedAtAction(nameof(GetUser), new { id = usere.Id }, usere);
+            return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
         }
 
         // PUT: api/Users/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, Usere usere)
+        public async Task<IActionResult> UpdateUser(int id, User user)
         {
-            if (id != usere.Id)
+            if (id != user.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(usere).State = EntityState.Modified;
+            _context.Entry(user).State = EntityState.Modified;
 
             try
             {
